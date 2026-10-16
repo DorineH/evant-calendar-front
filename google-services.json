@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1072348254719",
+    "project_id": "adventcalendar-notif",
+    "storage_bucket": "adventcalendar-notif.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1072348254719:android:e8d2507fab1826f70fd7ca",
+        "android_client_info": {
+          "package_name": "com.dh.adventcalendar"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDWyzh3FM5t5BC_gKZ5Ozh7bmRCrPQFxPg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
