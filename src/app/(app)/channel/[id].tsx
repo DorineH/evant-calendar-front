@@ -1,15 +1,23 @@
+import {
+  Channel,
+  channelsService,
+  getChannel,
+} from "@/services/channelsService";
+import { Ionicons } from "@expo/vector-icons";
+import * as Clipboard from "expo-clipboard";
 import * as ImagePicker from "expo-image-picker";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { useCallback, useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    FlatList,
-    Image,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  FlatList,
+  Image,
+  Share,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { useAuth } from "../../../context/AuthContext";
 import { DayPostsResult, postsService } from "../../../services/postsService";
@@ -21,17 +29,38 @@ function getTodayISO(): string {
 export default function ChannelDayScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { user } = useAuth();
+  const [channel, setChannel] = useState<Channel | null>(null);
   const [dayData, setDayData] = useState<DayPostsResult | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   const today = getTodayISO();
 
   useFocusEffect(
     useCallback(() => {
       loadDay();
+      loadChannel();
     }, [id]),
   );
+
+  async function handleCopyCode() {
+    if (!channel) return;
+    await Clipboard.setStringAsync(channel.inviteCode);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
+
+  async function handleShareCode() {
+    if (!channel) return;
+    try {
+      await Share.share({
+        message: `Rejoins mon calendrier de l'avent « ${channel.name} » ! 🎄\nCode d'invitation : ${channel.inviteCode}`,
+      });
+    } catch {
+      // L'utilisateur a fermé le menu de partage : rien à faire
+    }
+  }
 
   async function loadDay() {
     setIsLoading(true);
@@ -42,6 +71,15 @@ export default function ChannelDayScreen() {
       Alert.alert("Erreur", "Impossible de charger les photos du jour.");
     } finally {
       setIsLoading(false);
+    }
+  }
+
+  async function loadChannel() {
+    try {
+      const data = await getChannel(id);
+      setChannel(data);
+    } catch {
+      setChannel(null);
     }
   }
 
@@ -79,6 +117,33 @@ export default function ChannelDayScreen() {
     }
   }
 
+  function handleDeleteChannel() {
+    Alert.alert(
+      "Supprimer le canal ?",
+      `« ${channel?.name ?? "Ce canal"} » et toutes ses photos seront supprimés définitivement, pour tous les membres. Cette action est irréversible.`,
+      [
+        { text: "Non", style: "cancel" },
+        {
+          text: "Oui, supprimer",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await channelsService.deleteChannel(id);
+              router.replace("/");
+            } catch (error: any) {
+              const message =
+                error?.response?.data?.message ||
+                error.message ||
+                "Une erreur est survenue";
+              Alert.alert("Échec de la suppression", message);
+            }
+          },
+        },
+      ],
+      { cancelable: true },
+    );
+  }
+
   if (isLoading) {
     return (
       <View style={styles.center}>
@@ -91,9 +156,75 @@ export default function ChannelDayScreen() {
 
   return (
     <View style={styles.container}>
-      <TouchableOpacity onPress={() => router.back()}>
-        <Text style={styles.back}>‹ Retour</Text>
-      </TouchableOpacity>
+      <View style={styles.topRow}>
+        <TouchableOpacity onPress={() => router.back()}>
+          <Text style={styles.back}>‹ Retour</Text>
+        </TouchableOpacity>
+
+        {channel?.myRole === "owner" && (
+          <View style={styles.ownerActions}>
+            <TouchableOpacity
+              onPress={() =>
+                router.push({
+                  pathname: "../edit-channel/[id]",
+                  params: { id },
+                })
+              }
+              hitSlop={10}
+            >
+              <Text style={styles.edit}>Modifier</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={handleDeleteChannel}
+              hitSlop={10}
+              accessibilityLabel="Supprimer le canal"
+            >
+              <Ionicons name="trash-outline" size={22} color="#c0392b" />
+            </TouchableOpacity>
+          </View>
+        )}
+      </View>
+
+      {channel && (
+        <Text style={styles.channelName}>
+          {channel.name} · ouverture à {channel.openTime}
+        </Text>
+      )}
+
+      {channel && (
+        <View style={styles.inviteBox}>
+          <View>
+            <Text style={styles.inviteLabel}>Code d'invitation</Text>
+            <Text style={styles.inviteCode}>{channel.inviteCode}</Text>
+          </View>
+
+          <View style={styles.inviteActions}>
+            <TouchableOpacity
+              style={styles.inviteButton}
+              onPress={handleCopyCode}
+              accessibilityLabel="Copier le code d'invitation"
+            >
+              <Ionicons
+                name={copied ? "checkmark" : "copy-outline"}
+                size={18}
+                color="#c0392b"
+              />
+              <Text style={styles.inviteButtonText}>
+                {copied ? "Copié !" : "Copier"}
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.inviteButton}
+              onPress={handleShareCode}
+              accessibilityLabel="Partager le code d'invitation"
+            >
+              <Ionicons name="share-social-outline" size={18} color="#c0392b" />
+              <Text style={styles.inviteButtonText}>Partager</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
 
       <Text style={styles.title}>Aujourd'hui</Text>
 
@@ -149,7 +280,15 @@ export default function ChannelDayScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#fff", padding: 20, paddingTop: 60 },
   center: { flex: 1, justifyContent: "center", alignItems: "center" },
-  back: { color: "#c0392b", marginBottom: 10 },
+  topRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 10,
+  },
+  back: { color: "#c0392b" },
+  edit: { color: "#c0392b", fontWeight: "600" },
+  channelName: { fontSize: 14, color: "#888", marginBottom: 4 },
   title: { fontSize: 26, fontWeight: "bold", marginBottom: 20 },
   lockedBox: { alignItems: "center", marginTop: 40 },
   lockedText: {
@@ -170,4 +309,34 @@ const styles = StyleSheet.create({
   galleryPhoto: { width: "100%", aspectRatio: 1, borderRadius: 10 },
   galleryPseudo: { marginTop: 4, fontSize: 13, color: "#666" },
   empty: { textAlign: "center", color: "#888", marginTop: 40 },
+  ownerActions: { flexDirection: "row", alignItems: "center", gap: 18 },
+  inviteBox: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    backgroundColor: "#fdf2f0",
+    borderRadius: 10,
+    padding: 12,
+    marginTop: 8,
+    marginBottom: 16,
+  },
+  inviteLabel: { fontSize: 12, color: "#888" },
+  inviteCode: {
+    fontSize: 22,
+    fontWeight: "bold",
+    letterSpacing: 3,
+    color: "#333",
+  },
+  inviteActions: { flexDirection: "row", gap: 8 },
+  inviteButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    borderWidth: 1,
+    borderColor: "#c0392b",
+    borderRadius: 8,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+  },
+  inviteButtonText: { color: "#c0392b", fontWeight: "600", fontSize: 13 },
 });

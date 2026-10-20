@@ -7,6 +7,11 @@ export default function AppLayout() {
       <Stack.Screen name="index" />
       <Stack.Screen name="create-channel" options={{ presentation: "modal" }} />
       <Stack.Screen name="join-channel" options={{ presentation: "modal" }} />
+      <Stack.Screen
+        name="edit-channel/[id]"
+        options={{ presentation: "modal", title: "Modifier" }}
+      />
     </Stack>
+    
   );
 }
