@@ -80,8 +80,8 @@ export default function EditChannelScreen() {
       value: timeToDate(openTime || "19:00"),
       mode: "time",
       is24Hour: true,
-      onChange: (event, date) => {
-        if (event.type === "set" && date) setOpenTime(dateToTime(date));
+      onValueChange: (_event, date) => {
+        if (date) setOpenTime(dateToTime(date));
       },
     });
   }
@@ -91,8 +91,8 @@ export default function EditChannelScreen() {
       value: isoToDate(startDate),
       mode: "date",
       maximumDate: endDate ? isoToDate(endDate) : undefined,
-      onChange: (event, date) => {
-        if (event.type === "set" && date) setStartDate(dateToIso(date));
+      onValueChange: (_event, date) => {
+        if (date) setStartDate(dateToIso(date));
       },
     });
   }
@@ -102,8 +102,8 @@ export default function EditChannelScreen() {
       value: isoToDate(endDate),
       mode: "date",
       minimumDate: startDate ? isoToDate(startDate) : undefined,
-      onChange: (event, date) => {
-        if (event.type === "set" && date) setEndDate(dateToIso(date));
+      onValueChange: (_event, date) => {
+        if (date) setEndDate(dateToIso(date));
       },
     });
   }

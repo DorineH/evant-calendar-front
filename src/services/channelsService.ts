@@ -20,6 +20,11 @@ export interface UpdateChannelPayload {
   endDate?: string;
 }
 
+export interface ChannelMemberView {
+  role: ChannelRole;
+  user: { id: string; pseudo: string; avatarUrl: string | null };
+}
+
 export async function getChannel(id: string): Promise<Channel> {
   const { data } = await api.get<Channel>(`/channels/${id}`);
   return data;
@@ -68,5 +73,12 @@ export const channelsService = {
 
   async deleteChannel(id: string): Promise<void> {
     await api.delete(`/channels/${id}`);
+  },
+
+  async getMembers(id: string): Promise<ChannelMemberView[]> {
+    const { data } = await api.get<ChannelMemberView[]>(
+      `/channels/${id}/members`,
+    );
+    return data;
   },
 };

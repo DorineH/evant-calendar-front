@@ -2,6 +2,7 @@ import {
   Channel,
   channelsService,
   getChannel,
+  ChannelMemberView,
 } from "@/services/channelsService";
 import { Ionicons } from "@expo/vector-icons";
 import * as Clipboard from "expo-clipboard";
@@ -18,9 +19,11 @@ import {
   Text,
   TouchableOpacity,
   View,
+  ScrollView,
 } from "react-native";
 import { useAuth } from "../../../context/AuthContext";
 import { DayPostsResult, postsService } from "../../../services/postsService";
+import { Avatar } from "@/components/Avatar";
 
 function getTodayISO(): string {
   return new Date().toISOString().split("T")[0];
@@ -34,6 +37,7 @@ export default function ChannelDayScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [members, setMembers] = useState<ChannelMemberView[]>([]);
 
   const today = getTodayISO();
 
@@ -41,6 +45,7 @@ export default function ChannelDayScreen() {
     useCallback(() => {
       loadDay();
       loadChannel();
+      loadMembers();
     }, [id]),
   );
 
@@ -80,6 +85,15 @@ export default function ChannelDayScreen() {
       setChannel(data);
     } catch {
       setChannel(null);
+    }
+  }
+
+  async function loadMembers() {
+    try {
+      const data = await channelsService.getMembers(id);
+      setMembers(data);
+    } catch {
+      setMembers([]);
     }
   }
 
@@ -226,6 +240,34 @@ export default function ChannelDayScreen() {
         </View>
       )}
 
+      {members.length > 0 && (
+        <View style={styles.membersBox}>
+          <Text style={styles.membersTitle}>Membres ({members.length})</Text>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.membersRow}
+          >
+            {members.map((m) => (
+              <View key={m.user.id} style={styles.member}>
+                <Avatar
+                  uri={m.user.avatarUrl}
+                  pseudo={m.user.pseudo}
+                  seed={m.user.id}
+                  size={44}
+                />
+                <Text style={styles.memberPseudo} numberOfLines={1}>
+                  {m.user.id === user?.id ? "Moi" : m.user.pseudo}
+                </Text>
+                {m.role === "owner" && (
+                  <Text style={styles.ownerBadge}>Créateur</Text>
+                )}
+              </View>
+            ))}
+          </ScrollView>
+        </View>
+      )}
+
       <Text style={styles.title}>Aujourd'hui</Text>
 
       {dayData?.locked ? (
@@ -263,7 +305,17 @@ export default function ChannelDayScreen() {
                 source={{ uri: item.photoUrl }}
                 style={styles.galleryPhoto}
               />
-              <Text style={styles.galleryPseudo}>{item.user.pseudo}</Text>
+              <View style={styles.galleryAuthor}>
+                <Avatar
+                  uri={item.user.avatarUrl}
+                  pseudo={item.user.pseudo}
+                  seed={item.user.id}
+                  size={22}
+                />
+                <Text style={styles.galleryPseudo} numberOfLines={1}>
+                  {item.user.pseudo}
+                </Text>
+              </View>
             </View>
           )}
           ListEmptyComponent={
@@ -307,7 +359,26 @@ const styles = StyleSheet.create({
   buttonText: { color: "#fff", fontWeight: "bold", fontSize: 16 },
   galleryItem: { flex: 1, margin: 6, alignItems: "center" },
   galleryPhoto: { width: "100%", aspectRatio: 1, borderRadius: 10 },
-  galleryPseudo: { marginTop: 4, fontSize: 13, color: "#666" },
+  membersBox: { marginBottom: 16 },
+  membersTitle: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#333",
+    marginBottom: 8,
+  },
+  membersRow: { gap: 14, paddingRight: 8 },
+  member: { alignItems: "center", width: 60 },
+  memberPseudo: { fontSize: 12, color: "#444", marginTop: 4, maxWidth: 60 },
+  ownerBadge: { fontSize: 10, color: "#c0392b", fontWeight: "600" },
+
+  galleryAuthor: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginTop: 6,
+    maxWidth: "100%",
+  },
+  galleryPseudo: { fontSize: 13, color: "#666", flexShrink: 1 },
   empty: { textAlign: "center", color: "#888", marginTop: 40 },
   ownerActions: { flexDirection: "row", alignItems: "center", gap: 18 },
   inviteBox: {

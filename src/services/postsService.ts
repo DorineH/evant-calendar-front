@@ -1,12 +1,12 @@
-import { api } from "./api";
 import { File } from "expo-file-system";
+import { api } from "./api";
 
 export interface Post {
   id: string;
   photoUrl: string;
   caption?: string;
   dayDate: string;
-  user: { id: string; pseudo: string };
+  user: { id: string; pseudo: string; avatarUrl: string | null };
 }
 
 export interface DayPostsResult {

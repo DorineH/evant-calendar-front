@@ -1,45 +1,18 @@
-// import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
-// import { useAuth } from "../../context/AuthContext";
-
-// export default function HomeScreen() {
-//   const { user, logout } = useAuth();
-
-//   return (
-//     <View style={styles.container}>
-//       <Text style={styles.text}>Connecté en tant que {user?.pseudo} 🎄</Text>
-//       <TouchableOpacity style={styles.button} onPress={logout}>
-//         <Text style={styles.buttonText}>Se déconnecter</Text>
-//       </TouchableOpacity>
-//     </View>
-//   );
-// }
-
-// const styles = StyleSheet.create({
-//   container: {
-//     flex: 1,
-//     justifyContent: "center",
-//     alignItems: "center",
-//     padding: 24,
-//   },
-//   text: { fontSize: 18, marginBottom: 20 },
-//   button: { backgroundColor: "#c0392b", padding: 12, borderRadius: 8 },
-//   buttonText: { color: "#fff", fontWeight: "bold" },
-// });
-
-import React, { useState, useCallback } from "react";
-import {
-  View,
-  Text,
-  FlatList,
-  TouchableOpacity,
-  StyleSheet,
-} from "react-native";
 import { router, useFocusEffect } from "expo-router";
+import { useCallback, useState } from "react";
+import {
+  FlatList,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { Avatar } from "../../components/Avatar";
 import { useAuth } from "../../context/AuthContext";
-import { channelsService, Channel } from "../../services/channelsService";
+import { Channel, channelsService } from "../../services/channelsService";
 
 export default function ChannelsListScreen() {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const [channels, setChannels] = useState<Channel[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -63,9 +36,19 @@ export default function ChannelsListScreen() {
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>Mes canaux</Text>
-        <TouchableOpacity onPress={logout}>
-          <Text style={styles.logout}>Déconnexion</Text>
-        </TouchableOpacity>
+        {user && (
+          <TouchableOpacity
+            onPress={() => router.push("/(app)/profile")}
+            accessibilityLabel="Mon profil"
+          >
+            <Avatar
+              uri={user.avatarUrl}
+              pseudo={user.pseudo}
+              seed={user.id}
+              size={40}
+            />
+          </TouchableOpacity>
+        )}
       </View>
 
       {!isLoading && channels.length === 0 && (

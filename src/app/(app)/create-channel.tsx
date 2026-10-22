@@ -36,8 +36,8 @@ export default function CreateChannelScreen() {
       value: timeToDate(openTime),
       mode: "time",
       is24Hour: true,
-      onChange: (event, date) => {
-        if (event.type === "set" && date) setOpenTime(dateToTime(date));
+      onValueChange: (_event, date) => {
+        if (date) setOpenTime(dateToTime(date));
       },
     });
   }
@@ -48,8 +48,8 @@ export default function CreateChannelScreen() {
       mode: "date",
       minimumDate: isoToDate(todayIso()),
       maximumDate: isoToDate(endDate),
-      onChange: (event, date) => {
-        if (event.type === "set" && date) setStartDate(dateToIso(date));
+      onValueChange: (_event, date) => {
+        if (date) setStartDate(dateToIso(date));
       },
     });
   }
@@ -59,8 +59,8 @@ export default function CreateChannelScreen() {
       value: isoToDate(endDate),
       mode: "date",
       minimumDate: isoToDate(startDate),
-      onChange: (event, date) => {
-        if (event.type === "set" && date) setEndDate(dateToIso(date));
+      onValueChange: (_event, date) => {
+        if (date) setEndDate(dateToIso(date));
       },
     });
   }

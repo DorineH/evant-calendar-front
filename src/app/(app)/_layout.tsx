@@ -1,4 +1,3 @@
-import React from "react";
 import { Stack } from "expo-router";
 
 export default function AppLayout() {
@@ -11,7 +10,7 @@ export default function AppLayout() {
         name="edit-channel/[id]"
         options={{ presentation: "modal", title: "Modifier" }}
       />
+      <Stack.Screen name="profile" />
     </Stack>
-    
   );
 }
