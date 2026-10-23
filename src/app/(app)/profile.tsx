@@ -8,6 +8,7 @@ import {
   Platform,
   ScrollView,
   StyleSheet,
+  Switch,
   Text,
   TouchableOpacity,
   View,
@@ -54,6 +55,9 @@ export default function ProfileScreen() {
   const [pwdGeneral, setPwdGeneral] = useState<string | null>(null);
   const [pwdSaving, setPwdSaving] = useState(false);
   const [pwdSuccess, setPwdSuccess] = useState(false);
+  // --- Newsletter ---
+  const [consentSaving, setConsentSaving] = useState(false);
+  const [consentError, setConsentError] = useState<string | null>(null);
 
   if (!user) return null;
 
@@ -257,6 +261,22 @@ export default function ProfileScreen() {
         { text: "Oui, me déconnecter", style: "destructive", onPress: logout },
       ],
     );
+  }
+
+  // =========== CONSENTEMENT NEWSLETTER ============
+  async function handleToggleConsent(value: boolean) {
+    setConsentSaving(true);
+    setConsentError(null);
+    try {
+      const updated = await usersService.updateProfile({
+        marketingConsent: value,
+      });
+      updateUser(updated);
+    } catch (error) {
+      setConsentError(parseApiError(error).message);
+    } finally {
+      setConsentSaving(false);
+    }
   }
 
   // ================= AFFICHAGE =================
@@ -464,6 +484,27 @@ export default function ProfileScreen() {
           )}
         </View>
 
+        {/* ---------- Newsletter ---------- */}
+        <View style={styles.section}>
+          <View style={styles.row}>
+            <View style={{ flex: 1, marginRight: 12 }}>
+              <Text style={styles.sectionLabel}>Nouvelles par email</Text>
+              <Text style={styles.hint}>
+                Nouveautés et retour de l'app l'an prochain. Tu peux changer
+                d'avis à tout moment.
+              </Text>
+            </View>
+            <Switch
+              value={user.marketingConsent}
+              onValueChange={handleToggleConsent}
+              disabled={consentSaving}
+              trackColor={{ false: "#ccc", true: "#e8a39b" }}
+              thumbColor={user.marketingConsent ? "#c0392b" : "#f4f3f4"}
+            />
+          </View>
+          {consentError && <Text style={styles.errorText}>{consentError}</Text>}
+        </View>
+
         {/* ---------- Déconnexion ---------- */}
         <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
           <Text style={styles.logoutText}>Se déconnecter</Text>
@@ -549,4 +590,6 @@ const styles = StyleSheet.create({
     marginBottom: 30,
   },
   logoutText: { color: "#c0392b", fontWeight: "bold", fontSize: 16 },
+
+  hint: { fontSize: 12, color: "#888", marginTop: 2 },
 });

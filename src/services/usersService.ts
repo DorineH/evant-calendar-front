@@ -6,6 +6,7 @@ export interface Me {
   email: string;
   pseudo: string;
   avatarUrl: string | null;
+  marketingConsent: boolean;
   createdAt: string;
 }
 
@@ -21,6 +22,7 @@ export const usersService = {
   async updateProfile(data: {
     pseudo?: string;
     avatarUrl?: string | null;
+    marketingConsent?: boolean;
   }): Promise<Me> {
     const response = await api.patch<Me>("/users/me", data);
     return response.data;

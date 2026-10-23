@@ -11,6 +11,7 @@ import {
 import { FormField } from "../../components/FormField";
 import { useAuth } from "../../context/AuthContext";
 import { parseApiError } from "../../utils/apiErrors";
+import { Checkbox } from "@/components/Checkbox";
 
 type Field = "pseudo" | "email" | "password";
 type FieldErrors = Partial<Record<Field, string>>;
@@ -49,6 +50,7 @@ export default function RegisterScreen() {
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [generalError, setGeneralError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [marketingConsent, setMarketingConsent] = useState(false);
 
   function onChange(field: Field, value: string) {
     if (field === "pseudo") setPseudo(value);
@@ -67,7 +69,7 @@ export default function RegisterScreen() {
 
     setIsSubmitting(true);
     try {
-      await register(email.trim(), password, pseudo.trim());
+      await register(email.trim(), password, pseudo.trim(), marketingConsent);
     } catch (error) {
       const { fieldErrors: serverErrors, message } = parseApiError(error);
 
@@ -123,6 +125,12 @@ export default function RegisterScreen() {
           error={fieldErrors.password}
           secureTextEntry
           autoComplete="new-password"
+        />
+
+        <Checkbox
+          checked={marketingConsent}
+          onChange={setMarketingConsent}
+          label="J'accepte de recevoir par email des nouvelles du Calendrier de l'avent (nouveautés, retour de l'app l'an prochain). Facultatif, je peux me désabonner à tout moment depuis mon profil."
         />
 
         {generalError && (

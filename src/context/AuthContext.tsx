@@ -14,13 +14,19 @@ interface User {
   email: string;
   pseudo: string;
   avatarUrl: string | null;
+  marketingConsent: boolean;
 }
 
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string, pseudo: string) => Promise<void>;
+  register: (
+    email: string,
+    password: string,
+    pseudo: string,
+    marketingConsent,
+  ) => Promise<void>;
   logout: () => Promise<void>;
   updateUser: (user: User) => void;
 }
@@ -66,11 +72,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     registerPushSafely();
   }
 
-  async function register(email: string, password: string, pseudo: string) {
+  async function register(
+    email: string,
+    password: string,
+    pseudo: string,
+    marketingConsent: boolean,
+  ) {
     const response = await api.post<{ accessToken: string }>("/auth/register", {
       email,
       password,
       pseudo,
+      marketingConsent,
     });
     await tokenStorage.set(response.data.accessToken);
 
