@@ -7,12 +7,15 @@ export interface Post {
   caption?: string;
   dayDate: string;
   user: { id: string; pseudo: string; avatarUrl: string | null };
+  isMine: boolean;
+  openedByMe: boolean;
 }
 
 export interface DayPostsResult {
   locked: boolean;
   unlocksAt: string;
   posts: Post[];
+  othersCount: number;
 }
 
 interface UploadSignature {
@@ -73,5 +76,9 @@ export const postsService = {
       `/channels/${channelId}/posts/days/${date}`,
     );
     return response.data;
+  },
+
+  async openPost(channelId: string, postId: string): Promise<void> {
+    await api.post(`/channels/${channelId}/posts/${postId}/open`);
   },
 };

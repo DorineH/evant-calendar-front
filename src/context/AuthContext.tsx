@@ -25,7 +25,7 @@ interface AuthContextType {
     email: string,
     password: string,
     pseudo: string,
-    marketingConsent,
+    marketingConsent: boolean,
   ) => Promise<void>;
   logout: () => Promise<void>;
   updateUser: (user: User) => void;

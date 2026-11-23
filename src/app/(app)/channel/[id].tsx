@@ -1,3 +1,4 @@
+import { GiftCard } from "@/components/GiftCard";
 import { Ionicons } from "@expo/vector-icons";
 import * as Clipboard from "expo-clipboard";
 import * as ImagePicker from "expo-image-picker";
@@ -13,6 +14,7 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
+  useWindowDimensions,
   View,
 } from "react-native";
 import { Avatar } from "../../../components/Avatar";
@@ -22,7 +24,11 @@ import {
   ChannelMemberView,
   channelsService,
 } from "../../../services/channelsService";
-import { DayPostsResult, postsService } from "../../../services/postsService";
+import {
+  DayPostsResult,
+  Post,
+  postsService,
+} from "../../../services/postsService";
 import { parseApiError } from "../../../utils/apiErrors";
 import {
   addDays,
@@ -56,6 +62,8 @@ export default function ChannelDayScreen() {
   const [dayError, setDayError] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [openingId, setOpeningId] = useState<string | null>(null);
+  const { width: screenWidth } = useWindowDimensions();
 
   const dayRequest = useRef(0);
 
@@ -105,7 +113,12 @@ export default function ChannelDayScreen() {
     setDayData(null);
     try {
       const data = await postsService.getDayPosts(id, date);
-      if (requestId === dayRequest.current) setDayData(data);
+      if (requestId === dayRequest.current) {
+        setDayData(data);
+        data.posts
+          .filter((p) => !p.openedByMe)
+          .forEach((p) => Image.prefetch(p.photoUrl).catch(() => {}));
+      }
     } catch (error) {
       if (requestId === dayRequest.current) {
         setDayError(parseApiError(error).message);
@@ -158,6 +171,40 @@ export default function ChannelDayScreen() {
     } finally {
       setIsUploading(false);
     }
+  }
+
+  /** Met à jour l'état "ouvert" d'un post dans la liste affichée */
+  function setPostOpened(postId: string, opened: boolean) {
+    setDayData((prev) =>
+      prev
+        ? {
+            ...prev,
+            posts: prev.posts.map((p) =>
+              p.id === postId ? { ...p, openedByMe: opened } : p,
+            ),
+          }
+        : prev,
+    );
+  }
+
+  async function handleOpenGift(post: Post): Promise<boolean> {
+    setOpeningId(post.id);
+    try {
+      await postsService.openPost(id, post.id);
+      return true;
+    } catch (error) {
+      setOpeningId(null);
+      Alert.alert(
+        "Impossible d'ouvrir le cadeau",
+        parseApiError(error).message,
+      );
+      return false;
+    }
+  }
+
+  function handleGiftRevealed(post: Post) {
+    setPostOpened(post.id, true);
+    setOpeningId(null);
   }
 
   async function handleCopyCode() {
@@ -243,6 +290,13 @@ export default function ChannelDayScreen() {
   const todayInRange = today >= channel.startDate && today <= channel.endDate;
   const canPost = isToday && todayInRange && !myPost;
   const showGallery = !!dayData && !dayData.locked && !notStarted;
+  const giftsToOpen = showGallery
+    ? dayData!.posts.filter((p) => !p.openedByMe).length
+    : 0;
+  const cellSize = (screenWidth - 40) / 2 - 12; // 40 = marges de l'écran, 12 = espace entre les cases
+  // Confettis seulement si aucun cadeau des autres n'a encore été ouvert ce jour-là
+  const isFirstGiftOfDay =
+    showGallery && !dayData!.posts.some((p) => !p.isMine && p.openedByMe);
 
   // ================= EN-TÊTE =================
 
@@ -395,6 +449,14 @@ export default function ChannelDayScreen() {
         </>
       )}
 
+      {showGallery && !dayLoading && dayData!.posts.some((p) => !p.isMine) && (
+        <Text style={styles.giftCounter}>
+          {giftsToOpen > 0
+            ? `🎁 ${giftsToOpen} cadeau${giftsToOpen > 1 ? "x" : ""} à ouvrir`
+            : "Tous les cadeaux sont ouverts ✨"}
+        </Text>
+      )}
+
       {/* Contenu du jour */}
       {notStarted ? (
         <View style={styles.lockedBox}>
@@ -462,20 +524,17 @@ export default function ChannelDayScreen() {
       keyExtractor={(item) => item.id}
       numColumns={2}
       ListHeaderComponent={header}
+      extraData={openingId}
       renderItem={({ item }) => (
         <View style={styles.galleryItem}>
-          <Image source={{ uri: item.photoUrl }} style={styles.galleryPhoto} />
-          <View style={styles.galleryAuthor}>
-            <Avatar
-              uri={item.user.avatarUrl}
-              pseudo={item.user.pseudo}
-              seed={item.user.id}
-              size={22}
-            />
-            <Text style={styles.galleryPseudo} numberOfLines={1}>
-              {item.user.pseudo}
-            </Text>
-          </View>
+          <GiftCard
+            post={item}
+            size={cellSize}
+            disabled={openingId !== null && openingId !== item.id}
+            celebrate={isFirstGiftOfDay}
+            onOpen={handleOpenGift}
+            onRevealed={handleGiftRevealed}
+          />
         </View>
       )}
       ListEmptyComponent={
@@ -601,4 +660,10 @@ const styles = StyleSheet.create({
   },
   galleryPseudo: { fontSize: 13, color: "#666", flexShrink: 1 },
   empty: { textAlign: "center", color: "#888", marginTop: 30 },
+  giftCounter: {
+    textAlign: "center",
+    color: "#c0392b",
+    fontWeight: "600",
+    marginTop: 14,
+  },
 });

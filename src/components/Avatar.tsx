@@ -10,7 +10,7 @@ const COLORS = [
   "#2c3e50",
 ];
 
-function colorFor(seed: string): string {
+export function colorFor(seed: string): string {
   let hash = 0;
   for (let i = 0; i < seed.length; i++) {
     hash = (hash * 31 + seed.charCodeAt(i)) >>> 0;
